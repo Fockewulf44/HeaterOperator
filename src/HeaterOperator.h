@@ -7,7 +7,7 @@ class HeaterOperator
     public:
     HeaterOperator(uint16_t servoPin, uint16_t dthPin);
     ~HeaterOperator();
-    void ManageHeater();
+    void LoopProcessor();
     void ProcessCommand(uint8_t*);
     void SyncTime();
     int GetDateTime();
@@ -15,14 +15,18 @@ class HeaterOperator
     int Schedule1TurnOff;
     int Schedule2TurnOn;
     int Schedule2TurnOff; 
+    void TurnOnHeater();
+    void UpdateHeaterPower(bool IsHigh);
+    void PutServoNeutral();
 
     private:
     int currentDateTime;
     int dateTimeUpdDtm;
     uint16_t servoPin;
     uint16_t dthPin;
-    uint8_t isHeaterEnabled;
-    uint8_t isHeaterHigh;
-    uint8_t isStartedBySchedule;
+    bool isHeaterEnabled;
+    bool isHeaterHigh;
+    bool isStartedBySchedule;
+    
     Servo servo1;
 };

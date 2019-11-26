@@ -75,12 +75,26 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   request->send(200, "text/plain", "JSON body requested");
 }
 
+void SynTime()
+{
+  if(WiFi.isConnected())
+  {
+    configTime(-28800, 0, "north-america.pool.ntp.org");
+  }
+  else
+  {
+
+  }
+}
+
 void setup()
 {
   // Serial.begin(115200);
   // servo1.attach(servoPin);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+  configTime(-28800, 0, "north-america.pool.ntp.org");
+  
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
@@ -98,9 +112,24 @@ void setup()
   // Send a GET request to <IP>/get?message=<message>
   server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
     Serial.println("Get requested: ");
+    try
+    {      
+      struct tm timeinfo;
+      if (getLocalTime(&timeinfo))
+      {
+        Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+      }
+    }
+    catch(std::exception err)
+    {
+        Serial.println(err.what());
+    }
+
+    
+
     Serial.println(timeClient.getFormattedTime());
-    timeClient.update();
-    Serial.println(timeClient.getFormattedTime());
+    // timeClient.update();
+    // Serial.println(timeClient.getFormattedTime());
     String message;
     if (request->hasParam(PARAM_MESSAGE))
     {
