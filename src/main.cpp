@@ -46,14 +46,7 @@
 #include <ESPAsyncWebServer.h>
 #include "ArduinoJson.h"
 #include "HeaterOperator.h"
-#include <NTPClient.h>
-#include "WiFiUdp.h"
 
-// int servoPin = 14;
-// Servo servo1;
-
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP);
 
 AsyncWebServer server(80);
 HeaterOperator heaterOperator(14, 0);
@@ -75,35 +68,25 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   request->send(200, "text/plain", "JSON body requested");
 }
 
-void SynTime()
-{
-  if(WiFi.isConnected())
-  {
-    configTime(-28800, 0, "north-america.pool.ntp.org");
-  }
-  else
-  {
-
-  }
-}
-
 void setup()
 {
-  // Serial.begin(115200);
-  // servo1.attach(servoPin);
+ 
+  Serial.begin(115200);  
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  configTime(-28800, 0, "north-america.pool.ntp.org");
   
-
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.printf("WiFi Failed!\n");
     return;
   }
+  configTime(-28800, 0, "north-america.pool.ntp.org");
 
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+
+  heaterOperator.PutServoNeutral();
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "Hello, world");
@@ -113,28 +96,22 @@ void setup()
   server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
     Serial.println("Get requested: ");
     try
-    {      
+    {
       struct tm timeinfo;
       if (getLocalTime(&timeinfo))
       {
         Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
       }
     }
-    catch(std::exception err)
+    catch (std::exception err)
     {
-        Serial.println(err.what());
+      Serial.println(err.what());
     }
 
-    
-
-    Serial.println(timeClient.getFormattedTime());
-    // timeClient.update();
-    // Serial.println(timeClient.getFormattedTime());
     String message;
     if (request->hasParam(PARAM_MESSAGE))
     {
       message = request->getParam(PARAM_MESSAGE)->value();
-      // servo1.write(message.toInt());
     }
     else
     {
@@ -160,22 +137,17 @@ void setup()
     request->send(200, "text/plain", "Hello, POST: " + message);
   });
 
-  server.on("/manage", HTTP_POST, [](AsyncWebServerRequest *request) {
-
-  },
-            NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  server.on("/manage", HTTP_POST, [](AsyncWebServerRequest *request) {  },
+  NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       Serial.println("JSON");
-
 
       heaterOperator.ProcessCommand(data);
       request->send(200, "text/plain", "JSON received :)"); });
-
   server.onNotFound(notFound);
-  // server.onRequestBody(onBody);
-  // server.addHandler(handler);
   server.begin();
 }
 
 void loop()
 {
+  heaterOperator.LoopProcessor();
 }

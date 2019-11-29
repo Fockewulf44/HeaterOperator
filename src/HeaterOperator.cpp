@@ -15,9 +15,6 @@ HeaterOperator::HeaterOperator(uint16_t servoPin, uint16_t dthPin)
   this->isHeaterEnabled = false;
   this->isHeaterHigh = false;
   this->isStartedBySchedule = false;
-
-  Serial.begin(115200);
-  PutServoNeutral();
 }
 
 HeaterOperator::~HeaterOperator()
@@ -37,16 +34,22 @@ void HeaterOperator::ProcessCommand(uint8_t *data)
     }
     if (root.containsKey("turnOnHeater"))
     {
-      Serial.println(root["cmd1"].asString());
-
-      servo1.write(120);
-      delay(1000);
-      servo1.write(root["turnOnHeater"]);
+      TurnOnHeater();
+    }
+    if (root.containsKey("turnOffHeater"))
+    {
+      TurnOffHeater();
     }
     if (root.containsKey("write"))
     {
-      Serial.println(root["write"].asString());
+      //Just for test
+      servo1.attach(servoPin);
+
       servo1.write(root["write"]);
+      delay(200);
+      servo1.write(90);
+      delay(200);
+      this->servo1.detach();
     }
     if (root.containsKey("writemilliseconds"))
     {
@@ -63,29 +66,37 @@ void HeaterOperator::ProcessCommand(uint8_t *data)
       Serial.println(root["attach"].asString());
       servo1.attach(servoPin);
     }
-    //   request->send(200, "text/plain", "");
   }
   else
   {
-    //   request->send(404, "text/plain", "");
   }
 }
 
 void HeaterOperator::TurnOnHeater()
 {
-  if (!servo1.attached())
-  {
-    servo1.attach(servoPin);
-  }
+  servo1.attach(servoPin);
   servo1.write(35);
   delay(200);
   servo1.write(90);
+  delay(200);
+  this->servo1.detach();
   isHeaterEnabled = true;
   isHeaterHigh = false;
-  this->servo1.detach();
 }
 
-void HeaterOperator::UpdateHeaterPower(bool IsHigh)
+void HeaterOperator::TurnOffHeater()
+{
+  servo1.attach(servoPin);
+  servo1.write(35);
+  delay(200);
+  servo1.write(90);
+  delay(200);
+  this->servo1.detach();
+  isHeaterEnabled = false;
+  isHeaterHigh = false;
+}
+
+void HeaterOperator::UpdateHeaterPower()
 {
   if (isHeaterEnabled)
   {
@@ -94,22 +105,43 @@ void HeaterOperator::UpdateHeaterPower(bool IsHigh)
       servo1.attach(servoPin);
     }
     this->servo1.write(125);
-    delay(100);
+    delay(200);
     this->servo1.write(90);
+    delay(200);
     this->servo1.detach();
+    isHeaterHigh = !isHeaterHigh;
   }
 }
 
 void HeaterOperator::PutServoNeutral()
 {
-  if (!servo1.attached())
-  {
-    servo1.attach(servoPin);
-  }
+  servo1.attach(servoPin);
   this->servo1.write(90);
+  delay(200);
   this->servo1.detach();
 }
 
 void HeaterOperator::LoopProcessor()
 {
+  try
+  {
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo))
+    {
+      if (timeinfo.tm_sec == 55 && isTestOn == false)
+      {
+        isTestOn = true;
+        // TurnOnHeater();
+        Serial.println("Turning on Heater");
+      }
+      else
+      {
+        isTestOn = false;
+      }
+    }
+  }
+  catch (std::exception err)
+  {
+    Serial.println(err.what());
+  }
 }

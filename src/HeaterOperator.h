@@ -16,7 +16,8 @@ class HeaterOperator
     int Schedule2TurnOn;
     int Schedule2TurnOff; 
     void TurnOnHeater();
-    void UpdateHeaterPower(bool IsHigh);
+    void TurnOffHeater();
+    void UpdateHeaterPower();
     void PutServoNeutral();
 
     private:
@@ -27,6 +28,6 @@ class HeaterOperator
     bool isHeaterEnabled;
     bool isHeaterHigh;
     bool isStartedBySchedule;
-    
+    bool isTestOn;
     Servo servo1;
 };
