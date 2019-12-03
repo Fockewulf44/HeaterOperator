@@ -47,7 +47,6 @@
 #include "ArduinoJson.h"
 #include "HeaterOperator.h"
 
-
 AsyncWebServer server(80);
 HeaterOperator heaterOperator(14, 0);
 
@@ -70,12 +69,12 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
 
 void setup()
 {
- 
-  Serial.begin(115200);  
+
+  Serial.begin(115200);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  
+
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.printf("WiFi Failed!\n");
@@ -86,14 +85,12 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  heaterOperator.PutServoNeutral();
-
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "Hello, world");
+    request->send(200, "text/plain", "I am online.");
   });
 
   // Send a GET request to <IP>/get?message=<message>
-  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/getTime", HTTP_GET, [](AsyncWebServerRequest *request) {
     Serial.println("Get requested: ");
     try
     {
@@ -137,14 +134,38 @@ void setup()
     request->send(200, "text/plain", "Hello, POST: " + message);
   });
 
-  server.on("/manage", HTTP_POST, [](AsyncWebServerRequest *request) {  },
-  NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-      Serial.println("JSON");
+  server.on("/manage", HTTP_POST, [](AsyncWebServerRequest *request) {},
+            NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      Serial.println("JSON manage accepted");
 
       heaterOperator.ProcessCommand(data);
       request->send(200, "text/plain", "JSON received :)"); });
+  server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request) {},
+            NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      Serial.println("JSON config accepted");
+
+      heaterOperator.SetConfig(data);
+      request->send(200, "text/plain", "Config saved :)"); });
+
+  server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
+    Serial.println("JSON config requested");
+    try
+    {
+      char * jsonConfig = heaterOperator.GetConfig();
+      String strJsonConfig = String(jsonConfig);
+      Serial.println(strJsonConfig);
+      request->send(200, "application/json", strJsonConfig);
+    }
+    catch (std::exception err)
+    {
+      Serial.println(err.what());
+    }
+  });
+
   server.onNotFound(notFound);
   server.begin();
+
+  heaterOperator.PutServoNeutral();
 }
 
 void loop()
