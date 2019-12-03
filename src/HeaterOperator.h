@@ -24,6 +24,7 @@ class HeaterOperator
     void UpdateHeaterPower();
     void PutServoNeutral();
     void SetConfig(uint8_t*);
+    void BlinkBlueLed();
     char* GetConfig();
 
     private:

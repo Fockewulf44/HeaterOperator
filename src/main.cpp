@@ -1,38 +1,3 @@
-// #include <Arduino.h>
-// #include <Servo.h>
-// #include <WiFi.h>
-
-// int servoPin = 14;
-// Servo servo1;
-
-// void setup()
-// {
-//   Serial.begin(115200);
-//   servo1.attach(servoPin);
-
-// }
-
-// int16_t degree = 0;
-// int16_t step = 5;
-
-// void loop()
-// {
-
-//   // Serial.println("Ref a: " + *a);
-//   Serial.println(degree);
-//   if (degree == 180)
-//   {
-//     step = -5;
-//   }
-//   if (degree == 0)
-//   {
-//     step = 5;
-//   }
-
-//   degree = degree + step;
-//   servo1.write(degree);
-//   delay(2000);
-// }
 
 #include <Servo.h>
 #include <Arduino.h>
@@ -67,8 +32,11 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   request->send(200, "text/plain", "JSON body requested");
 }
 
+#define LED 2
+
 void setup()
 {
+  pinMode(LED, OUTPUT);
 
   Serial.begin(115200);
 
@@ -139,7 +107,7 @@ void setup()
       Serial.println("JSON manage accepted");
 
       heaterOperator.ProcessCommand(data);
-      request->send(200, "text/plain", "JSON received :)"); });
+      request->send(200, "text/plain", "JSON received :) Temp: " + String((temperatureRead()-36)/1.8)); });
   server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request) {},
             NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       Serial.println("JSON config accepted");
@@ -151,7 +119,7 @@ void setup()
     Serial.println("JSON config requested");
     try
     {
-      char * jsonConfig = heaterOperator.GetConfig();
+      char *jsonConfig = heaterOperator.GetConfig();
       String strJsonConfig = String(jsonConfig);
       Serial.println(strJsonConfig);
       request->send(200, "application/json", strJsonConfig);
@@ -167,6 +135,9 @@ void setup()
 
   heaterOperator.PutServoNeutral();
 }
+
+bool IsSchedule1Activated = false;
+int counter = 0;
 
 void loop()
 {

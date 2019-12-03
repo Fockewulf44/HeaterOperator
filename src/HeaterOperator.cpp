@@ -178,6 +178,14 @@ char *HeaterOperator::GetConfig()
   return JSONmessageBuffer;
 }
 
+void HeaterOperator::BlinkBlueLed()
+{
+  // delay(100);
+  // digitalWrite(LED, HIGH);
+  // delay(100);
+  // digitalWrite(LED, LOW);
+}
+
 void HeaterOperator::LoopProcessor()
 {
   try
@@ -185,21 +193,6 @@ void HeaterOperator::LoopProcessor()
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
     {
-      // if (timeinfo.tm_hour == 8 && timeinfo.tm_min == 30 && timeinfo.tm_sec == 00)
-      // {
-      //   if (isTestOn == false)
-      //   {
-      //     this->isTestOn = true;
-      //     Serial.println(isTestOn);
-      //     TurnOnHeater();
-      //     Serial.println("Turning on Heater");
-      //   }
-      // }
-      // else
-      // {
-      //   this->isTestOn = false;
-      // }
-
       if (IsSchedule1Enabled)
       {
         if (timeinfo.tm_hour == Schedule1TurnOn.tm_hour && timeinfo.tm_min == Schedule1TurnOn.tm_min && timeinfo.tm_sec == 00)
