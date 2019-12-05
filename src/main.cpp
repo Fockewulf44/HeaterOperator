@@ -60,9 +60,9 @@ void setup()
   // Send a GET request to <IP>/get?message=<message>
   server.on("/getTime", HTTP_GET, [](AsyncWebServerRequest *request) {
     Serial.println("Get requested: ");
+    struct tm timeinfo;
     try
-    {
-      struct tm timeinfo;
+    {      
       if (getLocalTime(&timeinfo))
       {
         Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
@@ -82,7 +82,9 @@ void setup()
     {
       message = "No message sent";
     }
-    request->send(200, "text/plain", "Hello, GET: " + message);
+    char timeStringBuff[50]; //50 chars should be enough
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+    request->send(200, "text/plain", "Hello, Local Time: " + String(timeStringBuff) + " Temp: " + String((temperatureRead()-36)/1.8));
   });
 
   // Send a POST request to <IP>/post with a form field message set to <message>
@@ -113,16 +115,18 @@ void setup()
       Serial.println("JSON config accepted");
 
       heaterOperator.SetConfig(data);
-      request->send(200, "text/plain", "Config saved :)"); });
+      request->send(200, "text/plain", "Config saved :) Temp: " + String((temperatureRead()-36)/1.8)); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
-    Serial.println("JSON config requested");
+    Serial.println("JSON config requested.  Temp: " + String((temperatureRead()-36)/1.8));
     try
     {
-      char *jsonConfig = heaterOperator.GetConfig();
-      String strJsonConfig = String(jsonConfig);
-      Serial.println(strJsonConfig);
-      request->send(200, "application/json", strJsonConfig);
+      char jsonConfig[300];
+      heaterOperator.GetConfig(jsonConfig);
+      Serial.println(jsonConfig);
+      // String strJsonConfig = String(jsonConfig);
+      // Serial.println(strJsonConfig);
+      request->send(200, "application/json", jsonConfig);
     }
     catch (std::exception err)
     {

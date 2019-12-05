@@ -25,7 +25,7 @@ class HeaterOperator
     void PutServoNeutral();
     void SetConfig(uint8_t*);
     void BlinkBlueLed();
-    char* GetConfig();
+    void GetConfig(char*);
 
     private:
     int currentDateTime;

@@ -131,11 +131,13 @@ void HeaterOperator::SetConfig(uint8_t *data)
   JsonObject &root = jsonBuffer.parseObject((const char *)data);
   if (root.success())
   {
-    if (root.containsKey("Schedules"))
+    if (root.containsKey("schedules"))
     {
-      JsonObject &schedules = root["Schedules"];
+      Serial.println("schedules");
+      JsonObject &schedules = root["schedules"];
       if (schedules.containsKey("schedule1"))
       {
+        Serial.println("schedule1");
         JsonObject &schedule1 = schedules["schedule1"];
         IsSchedule1Enabled = schedule1["isEnabled"] == 1 ? true : false;
         JsonObject &turnOn = schedule1["turnOn"];
@@ -144,9 +146,9 @@ void HeaterOperator::SetConfig(uint8_t *data)
         Schedule1TurnOn.tm_sec = 0;
 
         JsonObject &turnOff = schedule1["turnOff"];
-        Schedule1TurnOn.tm_hour = turnOff["hour"];
-        Schedule1TurnOn.tm_min = turnOff["min"];
-        Schedule1TurnOn.tm_sec = 0;
+        Schedule1TurnOff.tm_hour = turnOff["hour"];
+        Schedule1TurnOff.tm_min = turnOff["min"];
+        Schedule1TurnOff.tm_sec = 0;
       }
       if (schedules.containsKey("schedule2"))
       {
@@ -155,10 +157,11 @@ void HeaterOperator::SetConfig(uint8_t *data)
   }
 }
 
-char *HeaterOperator::GetConfig()
+void HeaterOperator::GetConfig(char* outputJSON)
 {
   StaticJsonBuffer<300> JSONbuffer;
   JsonObject &root = JSONbuffer.createObject();
+  JsonObject &Schedules = JSONbuffer.createObject();
   JsonObject &Schedule1 = JSONbuffer.createObject();
   JsonObject &turnOn = JSONbuffer.createObject();
   JsonObject &turnOff = JSONbuffer.createObject();
@@ -170,12 +173,11 @@ char *HeaterOperator::GetConfig()
   turnOff["sec"] = Schedule1TurnOff.tm_sec;
   Schedule1["turnOn"] = turnOn;
   Schedule1["turnOff"] = turnOff;
-  root["schedule1"] = Schedule1;
+  Schedules["schedule1"] = Schedule1;
+  root["schedules"] = Schedules;
 
-  char JSONmessageBuffer[300];
-  root.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
-  Serial.println(JSONmessageBuffer);
-  return JSONmessageBuffer;
+  root.printTo(outputJSON, 300);
+  // Serial.println(outputJSON);
 }
 
 void HeaterOperator::BlinkBlueLed()
