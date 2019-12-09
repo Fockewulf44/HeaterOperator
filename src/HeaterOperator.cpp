@@ -22,7 +22,7 @@ HeaterOperator::HeaterOperator(uint16_t servoPin, uint16_t dthPin)
 
   //Predefining manually
   struct tm predefined;
-  predefined.tm_hour = 06;
+  predefined.tm_hour = 6;
   predefined.tm_min = 40;
   this->Schedule1TurnOn = predefined;
   this->IsSchedule1Enabled = true;
@@ -98,13 +98,17 @@ void HeaterOperator::ProcessCommand(uint8_t *data)
     {
       TurnOffHeater();
     }
+    if (root.containsKey("UpdateHeaterPower"))
+    {
+      UpdateHeaterPower();
+    }
     if (root.containsKey("write"))
     {
       //Just for test
       servo1.attach(servoPin);
-
+      
       servo1.write(root["write"]);
-      delay(200);
+      delay(400);
       servo1.write(90);
       delay(400);
       this->servo1.detach();
@@ -127,17 +131,17 @@ void HeaterOperator::ProcessCommand(uint8_t *data)
 
 void HeaterOperator::SetConfig(uint8_t *data)
 {
-  StaticJsonBuffer<300> jsonBuffer;
+  StaticJsonBuffer<2000> jsonBuffer;
   JsonObject &root = jsonBuffer.parseObject((const char *)data);
   if (root.success())
   {
     if (root.containsKey("schedules"))
     {
       Serial.println("schedules");
+
       JsonObject &schedules = root["schedules"];
       if (schedules.containsKey("schedule1"))
       {
-        Serial.println("schedule1");
         JsonObject &schedule1 = schedules["schedule1"];
         IsSchedule1Enabled = schedule1["isEnabled"] == 1 ? true : false;
         JsonObject &turnOn = schedule1["turnOn"];
@@ -152,14 +156,25 @@ void HeaterOperator::SetConfig(uint8_t *data)
       }
       if (schedules.containsKey("schedule2"))
       {
+        JsonObject &schedule2 = schedules["schedule2"];
+        IsSchedule2Enabled = schedule2["isEnabled"] == 1 ? true : false;
+        JsonObject &turnOn = schedule2["turnOn"];
+        Schedule2TurnOn.tm_hour = turnOn["hour"];
+        Schedule2TurnOn.tm_min = turnOn["min"];
+        Schedule2TurnOn.tm_sec = 0;
+
+        JsonObject &turnOff = schedule2["turnOff"];
+        Schedule2TurnOff.tm_hour = turnOff["hour"];
+        Schedule2TurnOff.tm_min = turnOff["min"];
+        Schedule2TurnOff.tm_sec = 0;
       }
     }
   }
 }
 
-void HeaterOperator::GetConfig(char* outputJSON)
+void HeaterOperator::GetConfig(char *outputJSON)
 {
-  StaticJsonBuffer<300> JSONbuffer;
+  StaticJsonBuffer<2000> JSONbuffer;
   JsonObject &root = JSONbuffer.createObject();
   JsonObject &Schedules = JSONbuffer.createObject();
   JsonObject &Schedule1 = JSONbuffer.createObject();
@@ -171,17 +186,20 @@ void HeaterOperator::GetConfig(char* outputJSON)
   turnOff["hour"] = Schedule1TurnOff.tm_hour;
   turnOff["min"] = Schedule1TurnOff.tm_min;
   turnOff["sec"] = Schedule1TurnOff.tm_sec;
+  Schedule1["isEnabled"] = IsSchedule1Enabled ? 1 : 0;
   Schedule1["turnOn"] = turnOn;
   Schedule1["turnOff"] = turnOff;
   Schedules["schedule1"] = Schedule1;
   root["schedules"] = Schedules;
 
-  root.printTo(outputJSON, 300);
+  root.printTo(outputJSON, 2000);
   // Serial.println(outputJSON);
 }
 
 void HeaterOperator::BlinkBlueLed()
 {
+  // LED 2
+  // ####Setupe### pinMode(LED, OUTPUT);
   // delay(100);
   // digitalWrite(LED, HIGH);
   // delay(100);

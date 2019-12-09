@@ -32,12 +32,10 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   request->send(200, "text/plain", "JSON body requested");
 }
 
-#define LED 2
 
 void setup()
 {
-  pinMode(LED, OUTPUT);
-
+ 
   Serial.begin(115200);
 
   WiFi.mode(WIFI_STA);
@@ -121,7 +119,7 @@ void setup()
     Serial.println("JSON config requested.  Temp: " + String((temperatureRead()-36)/1.8));
     try
     {
-      char jsonConfig[300];
+      char jsonConfig[2000];
       heaterOperator.GetConfig(jsonConfig);
       Serial.println(jsonConfig);
       // String strJsonConfig = String(jsonConfig);
