@@ -1,5 +1,4 @@
 
-#include <Servo.h>
 #include <Arduino.h>
 #ifdef ESP32
 #include <WiFi.h>
@@ -11,6 +10,7 @@
 #include <ESPAsyncWebServer.h>
 #include "ArduinoJson.h"
 #include "HeaterOperator.h"
+#include "ArduinoOTA.h"
 
 AsyncWebServer server(80);
 HeaterOperator heaterOperator(14, 0);
@@ -32,10 +32,9 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   request->send(200, "text/plain", "JSON body requested");
 }
 
-
 void setup()
 {
- 
+
   Serial.begin(115200);
 
   WiFi.mode(WIFI_STA);
@@ -51,8 +50,56 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR)
+    {
+      Serial.println("Auth Failed");
+    }
+    else if (error == OTA_BEGIN_ERROR)
+    {
+      Serial.println("Begin Failed");
+    }
+    else if (error == OTA_CONNECT_ERROR)
+    {
+      Serial.println("Connect Failed");
+    }
+    else if (error == OTA_RECEIVE_ERROR)
+    {
+      Serial.println("Receive Failed");
+    }
+    else if (error == OTA_END_ERROR)
+    {
+      Serial.println("End Failed");
+    }
+  });
+
+  ArduinoOTA.begin();
+
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "I am online.");
+    String page = "<html><head></head><body>"
+                  "<div>Temp: #temp</div>	<div>Time: #time</div>	"
+                  "</body</html>";
+
+    struct tm timeinfo;
+    char timeStringBuff[50] = "00/00/0000";
+    if (getLocalTime(&timeinfo))
+    {
+      strftime(timeStringBuff, sizeof(timeStringBuff), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+    }
+
+    page.replace("#temp", String((temperatureRead() - 36) / 1.8));
+    page.replace("#time", String(timeStringBuff));
+    request->send(200, "text/html", page);
   });
 
   // Send a GET request to <IP>/get?message=<message>
@@ -60,7 +107,7 @@ void setup()
     Serial.println("Get requested: ");
     struct tm timeinfo;
     try
-    {      
+    {
       if (getLocalTime(&timeinfo))
       {
         Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
@@ -82,7 +129,7 @@ void setup()
     }
     char timeStringBuff[50]; //50 chars should be enough
     strftime(timeStringBuff, sizeof(timeStringBuff), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-    request->send(200, "text/plain", "Hello, Local Time: " + String(timeStringBuff) + " Temp: " + String((temperatureRead()-36)/1.8));
+    request->send(200, "text/plain", "Hello, Local Time: " + String(timeStringBuff) + " Temp: " + String((temperatureRead() - 36) / 1.8));
   });
 
   // Send a POST request to <IP>/post with a form field message set to <message>
@@ -116,7 +163,7 @@ void setup()
       request->send(200, "text/plain", "Config saved :) Temp: " + String((temperatureRead()-36)/1.8)); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
-    Serial.println("JSON config requested.  Temp: " + String((temperatureRead()-36)/1.8));
+    Serial.println("JSON config requested.  Temp: " + String((temperatureRead() - 36) / 1.8));
     try
     {
       char jsonConfig[2000];
@@ -136,12 +183,19 @@ void setup()
   server.begin();
 
   heaterOperator.PutServoNeutral();
-}
+  //Decreasing CPU Frequency to 40 to save battery
+  ets_update_cpu_frequency(80);
 
-bool IsSchedule1Activated = false;
-int counter = 0;
+  // delay(5000);
+  // WiFi.disconnect(true);
+  // esp_sleep_enable_timer_wakeup(1000*120);
+  // delay(2000);
+  // esp_light_sleep_start();
+  // esp_deep_sleep_start();
+}
 
 void loop()
 {
+  ArduinoOTA.handle();
   heaterOperator.LoopProcessor();
 }

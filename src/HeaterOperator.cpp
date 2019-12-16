@@ -1,6 +1,6 @@
 
 #include "HeaterOperator.h"
-#include "Servo.h"
+#include <Servo.h>
 #include <Arduino.h>
 #include "ArduinoJson.h"
 
@@ -10,7 +10,7 @@ HeaterOperator::HeaterOperator(uint16_t servoPin, uint16_t dthPin)
 {
   this->servoPin = servoPin;
   this->dthPin = dthPin;
-  this->servo1 = Servo();
+  this->servo1 = Servo();  
 
   this->isHeaterEnabled = false;
   this->isHeaterHigh = false;
@@ -25,6 +25,9 @@ HeaterOperator::HeaterOperator(uint16_t servoPin, uint16_t dthPin)
   predefined.tm_hour = 6;
   predefined.tm_min = 40;
   this->Schedule1TurnOn = predefined;
+  predefined.tm_hour = 7;
+  predefined.tm_min = 50;
+  this->Schedule1TurnOff = predefined;
   this->IsSchedule1Enabled = true;
 }
 
@@ -106,12 +109,13 @@ void HeaterOperator::ProcessCommand(uint8_t *data)
     {
       //Just for test
       servo1.attach(servoPin);
-      
+
       servo1.write(root["write"]);
-      delay(400);
+      delay(200);
       servo1.write(90);
-      delay(400);
+      delay(200);
       this->servo1.detach();
+      // delay(400);
     }
     if (root.containsKey("detach"))
     {
@@ -223,6 +227,20 @@ void HeaterOperator::LoopProcessor()
             TurnOnHeater();
             UpdateHeaterPower();
             Serial.println("Turning on Heater");
+          }
+        }
+        else
+        {
+          IsSchedule1Activated = false;
+        }
+
+        if (timeinfo.tm_hour == Schedule1TurnOff.tm_hour && timeinfo.tm_min == Schedule1TurnOff.tm_min && timeinfo.tm_sec == 00)
+        {
+          if (IsSchedule1Activated == false)
+          {
+            this->IsSchedule1Activated = true;
+            TurnOffHeater();
+            Serial.println("Turning off Heater");
           }
         }
         else
