@@ -11,12 +11,10 @@
 #include "ArduinoJson.h"
 #include "HeaterOperator.h"
 #include "ArduinoOTA.h"
+#include "GlobalConfig.h"
 
 AsyncWebServer server(80);
 HeaterOperator heaterOperator(14, 0);
-
-const char *ssid = "Sonoma #3 Google Wifi";
-const char *password = "word_dawg1999";
 
 const char *PARAM_MESSAGE = "message";
 
@@ -38,7 +36,8 @@ void setup()
   Serial.begin(115200);
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  
+  WiFi.begin(Config.ssid, Config.password);
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
@@ -184,7 +183,7 @@ void setup()
 
   heaterOperator.PutServoNeutral();
   //Decreasing CPU Frequency to 40 to save battery
-  ets_update_cpu_frequency(80);
+  // ets_update_cpu_frequency(80);
 
   // delay(5000);
   // WiFi.disconnect(true);
